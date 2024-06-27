@@ -6,6 +6,13 @@ const AllEntitiesMapViewer = () => {
   const [parcels, setParcels] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [maxDistance, setMaxDistance] = useState(20000); // Initial max distance
+  const [layerVisibility, setLayerVisibility] = useState({
+    'Light Rail': true,
+    'Bikeways': true,
+    'Bus Routes': true,
+    'Walkable Urban': true,
+    'City Owned Property': true,
+  });
   const parcelsPerPage = 10;
 
   useEffect(() => {
@@ -48,10 +55,27 @@ const AllEntitiesMapViewer = () => {
               }).addTo(map);
             });
 
+          function toggleLayerVisibility(layerName, isVisible) {
+            map.eachLayer(function(layer) {
+              if (layer.feature && layer.feature.properties.layer === layerName) {
+                if (isVisible) {
+                  map.addLayer(layer);
+                } else {
+                  map.removeLayer(layer);
+                }
+              }
+            });
+          }
+
           window.addEventListener('message', function (event) {
-              var parcelId = event.data;
-              highlightParcel(parcelId);
+              if (typeof event.data === 'string') {
+                highlightParcel(event.data);
+              } else if (event.data.layerName && typeof event.data.isVisible === 'boolean') {
+                toggleLayerVisibility(event.data.layerName, event.data.isVisible);
+              }
           });
+
+          window.toggleLayerVisibility = toggleLayerVisibility;
         })();
       `;
       iframe.contentWindow.document.body.appendChild(script);
@@ -62,6 +86,17 @@ const AllEntitiesMapViewer = () => {
     setSelectedParcel(parcelId);
     const iframe = document.getElementById('mapIframe');
     iframe.contentWindow.postMessage(parcelId, '*');
+  };
+
+  const handleLayerToggle = (layerName) => {
+    const updatedVisibility = {
+      ...layerVisibility,
+      [layerName]: !layerVisibility[layerName],
+    };
+    setLayerVisibility(updatedVisibility);
+
+    const iframe = document.getElementById('mapIframe');
+    iframe.contentWindow.postMessage({ layerName, isVisible: updatedVisibility[layerName] }, '*');
   };
 
   const filteredParcels = parcels.filter(
@@ -98,12 +133,28 @@ const AllEntitiesMapViewer = () => {
             id="maxDistance"
             name="maxDistance"
             min="0"
-            max="20000"
+            max="200000"
             value={maxDistance}
             onChange={(e) => setMaxDistance(e.target.value)}
             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
           />
           <span className="block text-sm text-gray-500 mt-2">{maxDistance} meters</span>
+        </div>
+        <div className="mb-4">
+          {Object.keys(layerVisibility).map((layer) => (
+            <div key={layer} className="flex items-center mb-2">
+              <input
+                type="checkbox"
+                id={layer}
+                checked={layerVisibility[layer]}
+                onChange={() => handleLayerToggle(layer)}
+                className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              />
+              <label htmlFor={layer} className="ml-2 block text-sm text-gray-700">
+                {layer}
+              </label>
+            </div>
+          ))}
         </div>
         <ul className="bg-white shadow sm:rounded-md">
           {currentParcels.map((parcel) => (
