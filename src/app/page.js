@@ -1,12 +1,13 @@
-import dynamic from 'next/dynamic';
+import React from 'react';
+import AllEntitiesMapViewer from '../components/AllEntitiesMap';
 
-const Map = dynamic(() => import('../components/Map'), { ssr: false });
-
-export default function Home() {
+const Home = () => {
   return (
     <div>
-      <h1>Map with GeoJSON Layers</h1>
-      <Map />
+      <h1>Interactive Map with Ranked Parcels</h1>
+      <AllEntitiesMapViewer />
     </div>
   );
-}
+};
+
+export default Home;
