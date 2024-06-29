@@ -12,7 +12,9 @@ const AllEntitiesMapViewer = () => {
     fetch('/maps/ranked_parcels.geojson')
       .then((response) => response.json())
       .then((data) => {
-        setParcels(data.features);
+        // Sort parcels from largest to shortest total distance
+        const sortedParcels = data.features.sort((a, b) => b.properties.total_distance - a.properties.total_distance);
+        setParcels(sortedParcels);
       });
   }, []);
 
@@ -65,7 +67,7 @@ const AllEntitiesMapViewer = () => {
   };
 
   const filteredParcels = parcels.filter(
-    (parcel) => parcel.properties.shortest_distance <= maxDistance
+    (parcel) => parcel.properties.total_distance <= maxDistance
   );
 
   const indexOfLastParcel = currentPage * parcelsPerPage;
@@ -91,7 +93,7 @@ const AllEntitiesMapViewer = () => {
       <div className="p-4 flex-grow overflow-auto bg-gray-100">
         <div className="mb-4">
           <label htmlFor="maxDistance" className="block text-sm font-medium text-gray-700">
-            Max Shortest Distance (meters)
+            Max Total Distance (meters)
           </label>
           <input
             type="range"
@@ -105,6 +107,7 @@ const AllEntitiesMapViewer = () => {
           />
           <span className="block text-sm text-gray-500 mt-2">{maxDistance} meters</span>
         </div>
+        <h2 className="text-lg font-medium text-gray-900">Ranked Parcels (least accessible)</h2>
         <ul className="bg-white shadow sm:rounded-md">
           {currentParcels.map((parcel) => (
             <li
